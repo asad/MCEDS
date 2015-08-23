@@ -71,7 +71,7 @@ public class MCEDS {
         File f = new File(fileName);
 
         Map<String, TreeMap<String, Set<String>>> map = new TreeMap<>();
-        String thisLine = null;
+        String thisLine;
         try (BufferedReader bf = new BufferedReader(new FileReader(f))) {
             String header = bf.readLine();
             while ((thisLine = bf.readLine()) != null) {
