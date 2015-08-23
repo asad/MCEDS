@@ -216,6 +216,7 @@ public class MCEDS {
 
         System.out.println("Total Input Domains Found: " + allDomains.size());
         System.out.println("Total Unique Domains Found: " + uniqueDomians.size());
+        System.out.println("Total Confusion Domains Found: " + (allDomains.size() - uniqueDomians.size()));
 
         System.out.println("!------------------------------------------------!");
         System.out.println("\tEC" + "\tPDB" + "\tDOMAINS" + "\tMDC");
