@@ -182,6 +182,8 @@ public class MCEDS {
 
         System.out.println("!------------------------------------------------!");
         System.out.println("\tEC" + "\tPDB" + "\tDOMAINS" + "\tMDC");
+        System.out.println("!------------------------------------------------!");
+        
         /*
          Print common domains
          */
@@ -197,7 +199,6 @@ public class MCEDS {
                      */
                     return commonDomains;
                 }).filter((commonDomains) -> (!commonDomains.isEmpty())).map((TreeSet<String> commonDomains) -> {
-                    System.out.println("!------------------------------------------------!");
                     return commonDomains;
                 }).forEach((commonDomains) -> {
                     System.out.println("\t" + ec + "\t" + pdbCode + "\t" + rawCathcodes + "\t" + commonDomains);
