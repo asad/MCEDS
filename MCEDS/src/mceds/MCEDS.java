@@ -53,6 +53,8 @@ public class MCEDS {
         if (commandAsList.contains("-f")) {
             int index = commandAsList.indexOf("-f") + 1;
             fileName = commandAsList.get(index);
+        } else if (commandAsList.contains("-cache")) {
+            fileName = "INTERPRO";
         }
 
         if (commandAsList.contains("-s")) {
@@ -73,32 +75,37 @@ public class MCEDS {
     }
 
     private MCEDS(String fileName) {
-        File f = new File(fileName);
         Set<String> allDomains = new TreeSet<>();
-        Map<String, TreeMap<Integer, Set<String>>> catalyticSites = new TreeMap<>();
-        Map<String, TreeMap<String, Set<String>>> rawMap = new TreeMap<>();
-        String thisLine;
-        try (BufferedReader bf = new BufferedReader(new FileReader(f))) {
-            String header = bf.readLine();
-            while ((thisLine = bf.readLine()) != null) {
-                String[] split = thisLine.split("\\s+|;");
-                String ec = split[0];
-                String pdb = split[1];
-                List<String> asList = Arrays.asList(split);
-                Set<String> data = new TreeSet<>(asList.subList(2, asList.size()));
+        final Map<String, TreeMap<Integer, Set<String>>> catalyticSites = new TreeMap<>();
+        final Map<String, TreeMap<String, Set<String>>> rawMap;
+        if (fileName != null && !fileName.equals("INTERPRO")) {
+            rawMap = new TreeMap<>();
+            File f = new File(fileName);
+            String thisLine;
+            try (BufferedReader bf = new BufferedReader(new FileReader(f))) {
+                String header = bf.readLine();
+                while ((thisLine = bf.readLine()) != null) {
+                    String[] split = thisLine.split("\\s+|;");
+                    String ec = split[0];
+                    String pdb = split[1];
+                    List<String> asList = Arrays.asList(split);
+                    Set<String> data = new TreeSet<>(asList.subList(2, asList.size()));
 
-                if (!rawMap.containsKey(ec)) {
-                    rawMap.put(ec, new TreeMap<>());
+                    if (!rawMap.containsKey(ec)) {
+                        rawMap.put(ec, new TreeMap<>());
+                    }
+                    rawMap.get(ec).put(pdb, data);
+                    allDomains.addAll(data);
                 }
-                rawMap.get(ec).put(pdb, data);
-                allDomains.addAll(data);
+            } catch (Exception ex) {
+                Logger.getLogger(MCEDS.class.getName()).log(Level.SEVERE, null, ex);
             }
-        } catch (Exception ex) {
-            Logger.getLogger(MCEDS.class.getName()).log(Level.SEVERE, null, ex);
-        }
 
-        if (DEBUG) {
-            System.out.println("Number of PDB entries parsed: " + rawMap.size());
+            if (DEBUG) {
+                System.out.println("Number of PDB entries parsed: " + rawMap.size());
+            }
+        } else {
+            rawMap = new ECPDBInterProIntegrator().PDB2ECAndInterPro();
         }
 
         /*
