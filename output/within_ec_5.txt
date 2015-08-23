@@ -1,3 +1,6 @@
+Total Input Domains Found: 165
+Total Unique Domains Found: 138
+Total Confusion Domains Found: 27
 !------------------------------------------------!
 	EC	PDB	DOMAINS	MDC
 !------------------------------------------------!
