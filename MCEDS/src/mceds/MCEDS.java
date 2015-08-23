@@ -214,6 +214,8 @@ public class MCEDS {
             });
         });
 
+        catalyticSites.clear();
+
         System.out.println("Total Input Domains Found: " + allDomains.size());
         System.out.println("Total Unique Domains Found: " + uniqueDomians.size());
         System.out.println("Total Confusion Domains Found: " + (allDomains.size() - uniqueDomians.size()));
@@ -226,7 +228,8 @@ public class MCEDS {
             TreeMap<String, Set<String>> map = refinedMCEDSMap.get(ec);
             map.keySet().stream().forEach((String pdbCode) -> {
                 Set<String> commonCATHDomains = map.get(pdbCode);
-                System.out.println("\t" + ec + "\t" + pdbCode + "\t" + commonCATHDomains);
+                Set<String> allDomainsForPDB = rawMap.get(ec).get(pdbCode);
+                System.out.println("\t" + ec + "\t" + pdbCode + "\t" + allDomainsForPDB + "\t" + commonCATHDomains);
             });
         });
 
