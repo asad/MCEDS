@@ -68,7 +68,7 @@ public class MCEDS {
         if (fileName != null) {
             MCEDS mceds = new MCEDS(fileName);
         } else {
-            System.err.println("java -jar MCEDS.jar -f data/ec5_pdb_cathids.txt -s");
+            System.err.println("java -jar MCEDS.jar -f data/ec5_pdb_DOMAINSids.txt -s");
             System.err.println("Note:\t-s for restricting the search within EC classes");
             System.err.println("\tdefault: test against all the ECs present in the input file.");
         }
@@ -95,7 +95,6 @@ public class MCEDS {
                         rawMap.put(ec, new TreeMap<>());
                     }
                     rawMap.get(ec).put(pdb, data);
-                    allDomains.addAll(data);
                 }
             } catch (Exception ex) {
                 Logger.getLogger(MCEDS.class.getName()).log(Level.SEVERE, null, ex);
@@ -116,13 +115,14 @@ public class MCEDS {
             System.out.println("\tIndex" + "\tEC" + "\tCombinations");
         }
         for (String ec : rawMap.keySet()) {
-            TreeMap<String, Set<String>> pdb_cath_combinations = rawMap.get(ec);
+            TreeMap<String, Set<String>> pdb_DOMAINS_combinations = rawMap.get(ec);
             Map<Integer, Set<String>> combinations = new TreeMap<>();
 
             int counter = 1;
-            for (String pdb : pdb_cath_combinations.keySet()) {
+            for (String pdb : pdb_DOMAINS_combinations.keySet()) {
                 Set<String> common = new TreeSet<>();
-                Set<String> domains = pdb_cath_combinations.get(pdb);
+                Set<String> domains = pdb_DOMAINS_combinations.get(pdb);
+                allDomains.addAll(domains);
                 boolean flag = false;
 
                 /*
@@ -144,7 +144,7 @@ public class MCEDS {
                     common.addAll(domains);
                     if (WITHIN_EC_CLASS) {
 
-                        pdb_cath_combinations.keySet().stream().map((pdbcommon) -> pdb_cath_combinations.get(pdbcommon)).map((domainsComb) -> new TreeSet<>(domainsComb)).map((c) -> {
+                        pdb_DOMAINS_combinations.keySet().stream().map((pdbcommon) -> pdb_DOMAINS_combinations.get(pdbcommon)).map((domainsComb) -> new TreeSet<>(domainsComb)).map((c) -> {
                             c.retainAll(common);
                             return c;
                         }).filter((c) -> (!c.isEmpty())).forEach((c) -> {
@@ -157,8 +157,8 @@ public class MCEDS {
 
                     } else {
                         for (String ecAll : rawMap.keySet()) {
-                            TreeMap<String, Set<String>> pdb_cath_combinations_all = rawMap.get(ecAll);
-                            pdb_cath_combinations_all.keySet().stream().map((pdbcommon) -> pdb_cath_combinations_all.get(pdbcommon)).map((domainsComb) -> new TreeSet<>(domainsComb)).map((c) -> {
+                            TreeMap<String, Set<String>> pdb_DOMAINS_combinations_all = rawMap.get(ecAll);
+                            pdb_DOMAINS_combinations_all.keySet().stream().map((pdbcommon) -> pdb_DOMAINS_combinations_all.get(pdbcommon)).map((domainsComb) -> new TreeSet<>(domainsComb)).map((c) -> {
                                 c.retainAll(common);
                                 return c;
                             }).filter((c) -> (!c.isEmpty())).forEach((c) -> {
@@ -199,17 +199,17 @@ public class MCEDS {
             }
             return ec;
         }).forEach((ec) -> {
-            TreeMap<String, Set<String>> pdb2cathCodes = rawMap.get(ec);
-            pdb2cathCodes.keySet().stream().forEach((pdbCode) -> {
-                Set<String> rawCathcodes = pdb2cathCodes.get(pdbCode);
+            TreeMap<String, Set<String>> pdb2DOMAINSCodes = rawMap.get(ec);
+            pdb2DOMAINSCodes.keySet().stream().forEach((pdbCode) -> {
+                Set<String> rawDomains = pdb2DOMAINSCodes.get(pdbCode);
                 TreeMap<Integer, Set<String>> cataticDomainMaps = catalyticSites.get(ec);
-                cataticDomainMaps.values().stream().forEach((cathDomains) -> {
-                    TreeSet<String> commonDomains = new TreeSet<>(cathDomains);
-                    commonDomains.retainAll(rawCathcodes);
+                cataticDomainMaps.values().stream().forEach((domains) -> {
+                    TreeSet<String> commonDomains = new TreeSet<>(domains);
+                    commonDomains.retainAll(rawDomains);
                     /*
                      Find the common min domains presence
                      */
-                    if (!commonDomains.isEmpty() && commonDomains.size() == cathDomains.size()) {
+                    if (!commonDomains.isEmpty() && commonDomains.size() == domains.size()) {
                         //System.out.println("\t" + ec + "\t" + pdbCode + "\t" + commonDomains);
                         if (!refinedMCEDSMap.get(ec).containsKey(pdbCode)) {
                             refinedMCEDSMap.get(ec).put(pdbCode, new TreeSet<>());
@@ -228,15 +228,15 @@ public class MCEDS {
         System.out.println("Total Confusion Domains Found: " + (allDomains.size() - uniqueDomians.size()));
 
         System.out.println("!------------------------------------------------!");
-        System.out.println("\t\"EC\"" + "\t\"PDB\"" + "\t\"DOMAINS\"" + "\t\"MDC\"");
+        System.out.println("\t\"EC\"" + "\t\"PDB\"" + "\t\"DOMAINS\"" + "\t\"MCEDS\"");
         System.out.println("!------------------------------------------------!");
 
         refinedMCEDSMap.keySet().stream().forEach((String ec) -> {
             TreeMap<String, Set<String>> map = refinedMCEDSMap.get(ec);
             map.keySet().stream().forEach((String pdbCode) -> {
-                Set<String> commonCATHDomains = map.get(pdbCode);
+                Set<String> commonDOMAINSDomains = map.get(pdbCode);
                 Set<String> allDomainsForPDB = rawMap.get(ec).get(pdbCode);
-                System.out.println("\t" + ec + "\t" + pdbCode + "\t" + allDomainsForPDB + "\t" + commonCATHDomains);
+                System.out.println("\t" + ec + "\t" + pdbCode + "\t" + allDomainsForPDB + "\t" + commonDOMAINSDomains);
             });
         });
 
