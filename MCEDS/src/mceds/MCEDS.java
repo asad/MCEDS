@@ -42,6 +42,7 @@ import java.util.logging.Logger;
 public class MCEDS {
 
     private static boolean WITHIN_EC_CLASS = false;
+    private static boolean DEBUG = false;
 
     /**
      * @param args the command line arguments
@@ -58,6 +59,10 @@ public class MCEDS {
             WITHIN_EC_CLASS = true;
         }
 
+        if (commandAsList.contains("-debug")) {
+            DEBUG = true;
+        }
+
         if (fileName != null) {
             MCEDS mceds = new MCEDS(fileName);
         } else {
@@ -70,7 +75,8 @@ public class MCEDS {
     private MCEDS(String fileName) {
         File f = new File(fileName);
 
-        Map<String, TreeMap<String, Set<String>>> map = new TreeMap<>();
+        Map<String, TreeMap<Integer, Set<String>>> catalyticSites = new TreeMap<>();
+        Map<String, TreeMap<String, Set<String>>> rawMap = new TreeMap<>();
         String thisLine;
         try (BufferedReader bf = new BufferedReader(new FileReader(f))) {
             String header = bf.readLine();
@@ -81,25 +87,28 @@ public class MCEDS {
                 List<String> asList = Arrays.asList(split);
                 Set<String> data = new TreeSet<>(asList.subList(2, asList.size()));
 
-                if (!map.containsKey(ec)) {
-                    map.put(ec, new TreeMap<>());
+                if (!rawMap.containsKey(ec)) {
+                    rawMap.put(ec, new TreeMap<>());
                 }
-                map.get(ec).put(pdb, data);
+                rawMap.get(ec).put(pdb, data);
             }
         } catch (Exception ex) {
             Logger.getLogger(MCEDS.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        System.out.println("map: " + map.size());
+        if (DEBUG) {
+            System.out.println("Number of PDB entries parsed: " + rawMap.size());
+        }
 
         /*
          Calculating minimum domain combinations in EC
          */
-        System.out.println("!------------------------------------------------!");
-        System.out.println("\tIndex" + "\tEC" + "\tCombinations");
-
-        for (String ec : map.keySet()) {
-            TreeMap<String, Set<String>> pdb_cath_combinations = map.get(ec);
+        if (DEBUG) {
+            System.out.println("!------------------------------------------------!");
+            System.out.println("\tIndex" + "\tEC" + "\tCombinations");
+        }
+        for (String ec : rawMap.keySet()) {
+            TreeMap<String, Set<String>> pdb_cath_combinations = rawMap.get(ec);
             Map<Integer, Set<String>> combinations = new TreeMap<>();
 
             int counter = 1;
@@ -139,8 +148,8 @@ public class MCEDS {
                         counter++;
 
                     } else {
-                        for (String ecAll : map.keySet()) {
-                            TreeMap<String, Set<String>> pdb_cath_combinations_all = map.get(ecAll);
+                        for (String ecAll : rawMap.keySet()) {
+                            TreeMap<String, Set<String>> pdb_cath_combinations_all = rawMap.get(ecAll);
                             pdb_cath_combinations_all.keySet().stream().map((pdbcommon) -> pdb_cath_combinations_all.get(pdbcommon)).map((domainsComb) -> new TreeSet<>(domainsComb)).map((c) -> {
                                 c.retainAll(common);
                                 return c;
@@ -156,13 +165,45 @@ public class MCEDS {
 
             }
 
+            if (!catalyticSites.containsKey(ec)) {
+                catalyticSites.put(ec, new TreeMap<>());
+            }
             /*
              Print Combinations
              */
-            System.out.println("!------------------------------------------------!");
-            combinations.entrySet().stream().forEach((m) -> {
-                System.out.println("\t" + m.getKey() + "\t" + ec + "\t" + m.getValue());
-            });
+            if (DEBUG) {
+                System.out.println("!------------------------------------------------!");
+                combinations.entrySet().stream().forEach((m) -> {
+                    System.out.println("\t" + m.getKey() + "\t" + ec + "\t" + m.getValue());
+                });
+            }
+            catalyticSites.get(ec).putAll(combinations);
         }
+
+        System.out.println("!------------------------------------------------!");
+        System.out.println("\tEC" + "\tPDB" + "\tDOMAINS" + "\tMDC");
+        /*
+         Print common domains
+         */
+        rawMap.keySet().stream().forEach((String ec) -> {
+            TreeMap<String, Set<String>> pdb2cathCodes = rawMap.get(ec);
+            pdb2cathCodes.keySet().stream().forEach((String pdbCode) -> {
+                Set<String> rawCathcodes = pdb2cathCodes.get(pdbCode);
+                TreeMap<Integer, Set<String>> cataticDomainMaps = catalyticSites.get(ec);
+                cataticDomainMaps.values().stream().map((cathDomains) -> new TreeSet<>(cathDomains)).map((TreeSet<String> commonDomains) -> {
+                    commonDomains.retainAll(rawCathcodes);
+                    /*
+                     Find the common min domains presence
+                     */
+                    return commonDomains;
+                }).filter((commonDomains) -> (!commonDomains.isEmpty())).map((TreeSet<String> commonDomains) -> {
+                    System.out.println("!------------------------------------------------!");
+                    return commonDomains;
+                }).forEach((commonDomains) -> {
+                    System.out.println("\t" + ec + "\t" + pdbCode + "\t" + rawCathcodes + "\t" + commonDomains);
+                });
+            });
+        });
     }
+
 }
