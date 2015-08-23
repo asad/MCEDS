@@ -18,7 +18,7 @@ Note:
 	
 	default: test against all the ECs present in the input file.
 
-####EC-PDB-InterPro MCEDS knowledgebase via SIFTS
+####EC-PDB-InterPro MCEDS knowledge-base via SIFTS
 
 #####Command to build MCEDS based on the InterPro domains:
 
