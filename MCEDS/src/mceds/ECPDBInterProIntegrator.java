@@ -91,7 +91,7 @@ public class ECPDBInterProIntegrator {
             }
 
             if (success) {
-                System.out.println("File " + downloadFile1.getName() + " has been downloaded successfully.");
+                System.err.println("File " + downloadFile1.getName() + " has been downloaded successfully.");
             }
 
             // APPROACH #2: using InputStream retrieveFileStream(String)
@@ -106,7 +106,7 @@ public class ECPDBInterProIntegrator {
                 }
                 success = ftpClient.completePendingCommand();
                 if (success) {
-                    System.out.println("File " + downloadFile2.getName() + " has been downloaded successfully.");
+                    System.err.println("File " + downloadFile2.getName() + " has been downloaded successfully.");
                 }
             }
             inputStream.close();
