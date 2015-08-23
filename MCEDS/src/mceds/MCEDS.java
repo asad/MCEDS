@@ -180,31 +180,49 @@ public class MCEDS {
             catalyticSites.get(ec).putAll(combinations);
         }
 
-        System.out.println("!------------------------------------------------!");
-        System.out.println("\tEC" + "\tPDB" + "\tDOMAINS" + "\tMDC");
-        System.out.println("!------------------------------------------------!");
-        
         /*
-         Print common domains
+         Update and fill map of common domains
          */
-        rawMap.keySet().stream().forEach((String ec) -> {
+        final Map<String, TreeMap<String, Set<String>>> refinedMCEDSMap = new TreeMap<>();
+        rawMap.keySet().stream().map((ec) -> {
+            if (!refinedMCEDSMap.containsKey(ec)) {
+                refinedMCEDSMap.put(ec, new TreeMap<>());
+            }
+            return ec;
+        }).forEach((ec) -> {
             TreeMap<String, Set<String>> pdb2cathCodes = rawMap.get(ec);
-            pdb2cathCodes.keySet().stream().forEach((String pdbCode) -> {
+            pdb2cathCodes.keySet().stream().forEach((pdbCode) -> {
                 Set<String> rawCathcodes = pdb2cathCodes.get(pdbCode);
                 TreeMap<Integer, Set<String>> cataticDomainMaps = catalyticSites.get(ec);
-                cataticDomainMaps.values().stream().map((cathDomains) -> new TreeSet<>(cathDomains)).map((TreeSet<String> commonDomains) -> {
+                cataticDomainMaps.values().stream().forEach((cathDomains) -> {
+                    TreeSet<String> commonDomains = new TreeSet<>(cathDomains);
                     commonDomains.retainAll(rawCathcodes);
                     /*
                      Find the common min domains presence
                      */
-                    return commonDomains;
-                }).filter((commonDomains) -> (!commonDomains.isEmpty())).map((TreeSet<String> commonDomains) -> {
-                    return commonDomains;
-                }).forEach((commonDomains) -> {
-                    System.out.println("\t" + ec + "\t" + pdbCode + "\t" + rawCathcodes + "\t" + commonDomains);
+                    if (!commonDomains.isEmpty() && commonDomains.size() == cathDomains.size()) {
+                        //System.out.println("\t" + ec + "\t" + pdbCode + "\t" + commonDomains);
+                        if (!refinedMCEDSMap.get(ec).containsKey(pdbCode)) {
+                            refinedMCEDSMap.get(ec).put(pdbCode, new TreeSet<>());
+                        }
+                        refinedMCEDSMap.get(ec).get(pdbCode).addAll(commonDomains);
+                    }
                 });
             });
         });
+
+        System.out.println("!------------------------------------------------!");
+        System.out.println("\tEC" + "\tPDB" + "\tDOMAINS" + "\tMDC");
+        System.out.println("!------------------------------------------------!");
+
+        refinedMCEDSMap.keySet().stream().forEach((String ec) -> {
+            TreeMap<String, Set<String>> map = refinedMCEDSMap.get(ec);
+            map.keySet().stream().forEach((String pdbCode) -> {
+                Set<String> commonCATHDomains = map.get(pdbCode);
+                System.out.println("\t" + ec + "\t" + pdbCode + "\t" + commonCATHDomains);
+            });
+        });
+
     }
 
 }
