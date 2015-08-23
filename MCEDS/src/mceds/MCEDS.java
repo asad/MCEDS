@@ -221,7 +221,7 @@ public class MCEDS {
         System.out.println("Total Confusion Domains Found: " + (allDomains.size() - uniqueDomians.size()));
 
         System.out.println("!------------------------------------------------!");
-        System.out.println("\tEC" + "\tPDB" + "\tDOMAINS" + "\tMDC");
+        System.out.println("\t\"EC\"" + "\t\"PDB\"" + "\t\"DOMAINS\"" + "\t\"MDC\"");
         System.out.println("!------------------------------------------------!");
 
         refinedMCEDSMap.keySet().stream().forEach((String ec) -> {
