@@ -74,7 +74,7 @@ public class MCEDS {
 
     private MCEDS(String fileName) {
         File f = new File(fileName);
-
+        Set<String> allDomains = new TreeSet<>();
         Map<String, TreeMap<Integer, Set<String>>> catalyticSites = new TreeMap<>();
         Map<String, TreeMap<String, Set<String>>> rawMap = new TreeMap<>();
         String thisLine;
@@ -91,6 +91,7 @@ public class MCEDS {
                     rawMap.put(ec, new TreeMap<>());
                 }
                 rawMap.get(ec).put(pdb, data);
+                allDomains.addAll(data);
             }
         } catch (Exception ex) {
             Logger.getLogger(MCEDS.class.getName()).log(Level.SEVERE, null, ex);
@@ -184,6 +185,7 @@ public class MCEDS {
          Update and fill map of common domains
          */
         final Map<String, TreeMap<String, Set<String>>> refinedMCEDSMap = new TreeMap<>();
+        Set<String> uniqueDomians = new TreeSet<>();
         rawMap.keySet().stream().map((ec) -> {
             if (!refinedMCEDSMap.containsKey(ec)) {
                 refinedMCEDSMap.put(ec, new TreeMap<>());
@@ -206,10 +208,14 @@ public class MCEDS {
                             refinedMCEDSMap.get(ec).put(pdbCode, new TreeSet<>());
                         }
                         refinedMCEDSMap.get(ec).get(pdbCode).addAll(commonDomains);
+                        uniqueDomians.addAll(commonDomains);
                     }
                 });
             });
         });
+
+        System.out.println("Total Input Domains Found: " + allDomains.size());
+        System.out.println("Total Unique Domains Found: " + uniqueDomians.size());
 
         System.out.println("!------------------------------------------------!");
         System.out.println("\tEC" + "\tPDB" + "\tDOMAINS" + "\tMDC");
