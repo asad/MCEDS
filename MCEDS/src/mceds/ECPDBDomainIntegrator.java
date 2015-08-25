@@ -10,11 +10,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -29,7 +32,15 @@ import org.apache.commons.net.ftp.FTPClient;
  *
  * @author Asad
  */
-public class ECPDBInterProIntegrator {
+public class ECPDBDomainIntegrator {
+
+    boolean DEBUG = false;
+
+    final Map<String, TreeMap<String, Set<String>>> rawMap;
+
+    public ECPDBDomainIntegrator() {
+        this.rawMap = new TreeMap<>();
+    }
 
     String pdb_interpro = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_interpro.tsv.gz";
     String pdb_ec = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_enzyme.tsv.gz";
@@ -39,17 +50,16 @@ public class ECPDBInterProIntegrator {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        Map<String, TreeMap<String, Set<String>>> PDB2ECAndInterPro = new ECPDBInterProIntegrator().PDB2ECAndInterPro();
-        System.out.println("Number of EC Parsed: " + PDB2ECAndInterPro.size());
+        ECPDBDomainIntegrator ecpdbDomainIntegrator = new ECPDBDomainIntegrator();
+        ecpdbDomainIntegrator.PDB2ECAndInterPro();
+        Map<String, TreeMap<String, Set<String>>> map = ecpdbDomainIntegrator.getMap();
+        System.out.println("Number of EC Parsed: " + map.size());
     }
 
     /**
      *
-     * @return Map of EC and InterPro Domains
      */
-    protected Map<String, TreeMap<String, Set<String>>> PDB2ECAndInterPro() {
-
-        Map<String, TreeMap<String, Set<String>>> rawData = new TreeMap<>();
+    protected void PDB2ECAndInterPro() {
 
         String server = "ftp.ebi.ac.uk";
         int port = 21;
@@ -61,18 +71,18 @@ public class ECPDBInterProIntegrator {
             downloadFile1 = File.createTempFile("pdb_chain_interpro", "tsv.gz");
             downloadFile1.deleteOnExit();
         } catch (IOException ex) {
-            Logger.getLogger(ECPDBInterProIntegrator.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECPDBDomainIntegrator.class.getName()).log(Level.SEVERE, null, ex);
         }
         File downloadFile2 = null;
         try {
             downloadFile2 = File.createTempFile("pdb_chain_enzyme", "tsv.gz");
             downloadFile2.deleteOnExit();
         } catch (IOException ex) {
-            Logger.getLogger(ECPDBInterProIntegrator.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECPDBDomainIntegrator.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         if (downloadFile1 == null || downloadFile2 == null) {
-            return rawData;
+            return;
         }
 
         FTPClient ftpClient = new FTPClient();
@@ -143,18 +153,18 @@ public class ECPDBInterProIntegrator {
                         String pdb = split[0];
                         String ec = split[split.length - 1];
 
-                        if (!rawData.containsKey(ec)) {
-                            rawData.put(ec, new TreeMap<>());
+                        if (!rawMap.containsKey(ec)) {
+                            rawMap.put(ec, new TreeMap<>());
                         }
 
-                        if (!rawData.get(ec).containsKey(pdb)) {
-                            rawData.get(ec).put(pdb, new TreeSet<>());
+                        if (!rawMap.get(ec).containsKey(pdb)) {
+                            rawMap.get(ec).put(pdb, new TreeSet<>());
                         }
                         //System.err.println("pdb " + pdb + " ec " + ec);
                     }
                 }
             } catch (IOException ex) {
-                Logger.getLogger(ECPDBInterProIntegrator.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ECPDBDomainIntegrator.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
@@ -174,19 +184,47 @@ public class ECPDBInterProIntegrator {
                         String pdb = split[0];
                         String interpro = split[split.length - 1];
 
-                        rawData.keySet().stream().filter((ec) -> (rawData.get(ec).containsKey(pdb))).forEach((ec) -> {
-                            rawData.get(ec).get(pdb).add(interpro);
+                        rawMap.keySet().stream().filter((ec) -> (rawMap.get(ec).containsKey(pdb))).forEach((ec) -> {
+                            rawMap.get(ec).get(pdb).add(interpro);
                         });
 
                         //System.err.println("pdb " + pdb + " interpro " + interpro);
                     }
                 }
             } catch (IOException ex) {
-                Logger.getLogger(ECPDBInterProIntegrator.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ECPDBDomainIntegrator.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
-        //System.out.println("Number of EC Parsed: " + rawData.size());
-        return rawData;
+    }
+
+    protected void parseFile(String fileName) {
+        File f = new File(fileName);
+        String thisLine;
+        try (BufferedReader bf = new BufferedReader(new FileReader(f))) {
+            String header = bf.readLine();
+            while ((thisLine = bf.readLine()) != null) {
+                String[] split = thisLine.split("\\s+|;");
+                String ec = split[0];
+                String pdb = split[1];
+                List<String> asList = Arrays.asList(split);
+                Set<String> data = new TreeSet<>(asList.subList(2, asList.size()));
+
+                if (!rawMap.containsKey(ec)) {
+                    rawMap.put(ec, new TreeMap<>());
+                }
+                rawMap.get(ec).put(pdb, data);
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(MCEDS.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        if (DEBUG) {
+            System.out.println("Number of PDB entries parsed: " + rawMap.size());
+        }
+    }
+
+    Map<String, TreeMap<String, Set<String>>> getMap() {
+        return rawMap;
     }
 }

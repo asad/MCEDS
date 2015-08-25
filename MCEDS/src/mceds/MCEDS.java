@@ -23,17 +23,12 @@
  */
 package mceds;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -75,37 +70,47 @@ public class MCEDS {
     }
 
     private MCEDS(String fileName) {
-        Set<String> allDomains = new TreeSet<>();
         final Map<String, TreeMap<Integer, Set<String>>> catalyticSites = new TreeMap<>();
-        final Map<String, TreeMap<String, Set<String>>> rawMap;
+
+        ECPDBDomainIntegrator ecpdbDomainIntegrator = new ECPDBDomainIntegrator();
         if (fileName != null && !fileName.equals("INTERPRO")) {
-            rawMap = new TreeMap<>();
-            File f = new File(fileName);
-            String thisLine;
-            try (BufferedReader bf = new BufferedReader(new FileReader(f))) {
-                String header = bf.readLine();
-                while ((thisLine = bf.readLine()) != null) {
-                    String[] split = thisLine.split("\\s+|;");
-                    String ec = split[0];
-                    String pdb = split[1];
-                    List<String> asList = Arrays.asList(split);
-                    Set<String> data = new TreeSet<>(asList.subList(2, asList.size()));
-
-                    if (!rawMap.containsKey(ec)) {
-                        rawMap.put(ec, new TreeMap<>());
-                    }
-                    rawMap.get(ec).put(pdb, data);
-                }
-            } catch (Exception ex) {
-                Logger.getLogger(MCEDS.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
-            if (DEBUG) {
-                System.out.println("Number of PDB entries parsed: " + rawMap.size());
-            }
+            ecpdbDomainIntegrator.parseFile(fileName);
         } else {
-            rawMap = new ECPDBInterProIntegrator().PDB2ECAndInterPro();
+            ecpdbDomainIntegrator.PDB2ECAndInterPro();
         }
+
+        Map<String, TreeMap<String, Set<String>>> rawMap = ecpdbDomainIntegrator.getMap();
+
+        /*
+         Calculating minimum domain combinations in EC
+         */
+        final Set<String> allDomains = conservedDomains(rawMap, catalyticSites);
+        final Map<String, TreeMap<String, Set<String>>> refinedMCEDSMap = new TreeMap<>();
+
+        Set<String> uniqueDomians = refineDomains(rawMap, catalyticSites, refinedMCEDSMap);
+        catalyticSites.clear();
+
+        System.out.println("Total Input Domains Found: " + allDomains.size());
+        System.out.println("Total Unique Domains Found: " + uniqueDomians.size());
+        System.out.println("Total Confusion Domains Found: " + (allDomains.size() - uniqueDomians.size()));
+
+        System.out.println("!------------------------------------------------!");
+        System.out.println("\t\"EC\"" + "\t\"PDB\"" + "\t\"DOMAINS\"" + "\t\"MCEDS\"");
+        System.out.println("!------------------------------------------------!");
+
+        refinedMCEDSMap.keySet().stream().forEach((String ec) -> {
+            TreeMap<String, Set<String>> map = refinedMCEDSMap.get(ec);
+            map.keySet().stream().forEach((String pdbCode) -> {
+                Set<String> commonDOMAINSDomains = map.get(pdbCode);
+                Set<String> allDomainsForPDB = rawMap.get(ec).get(pdbCode);
+                System.out.println("\t" + ec + "\t" + pdbCode + "\t" + allDomainsForPDB + "\t" + commonDOMAINSDomains);
+            });
+        });
+
+    }
+
+    private Set<String> conservedDomains(final Map<String, TreeMap<String, Set<String>>> rawMap, final Map<String, TreeMap<Integer, Set<String>>> catalyticSites) {
+        final Set<String> allDomains = new TreeSet<>();
 
         /*
          Calculating minimum domain combinations in EC
@@ -187,11 +192,15 @@ public class MCEDS {
             }
             catalyticSites.get(ec).putAll(combinations);
         }
+        return allDomains;
+    }
 
+    private Set<String> refineDomains(final Map<String, TreeMap<String, Set<String>>> rawMap,
+            final Map<String, TreeMap<Integer, Set<String>>> catalyticSites,
+            Map<String, TreeMap<String, Set<String>>> refinedMCEDSMap) {
         /*
          Update and fill map of common domains
          */
-        final Map<String, TreeMap<String, Set<String>>> refinedMCEDSMap = new TreeMap<>();
         Set<String> uniqueDomians = new TreeSet<>();
         rawMap.keySet().stream().map((ec) -> {
             if (!refinedMCEDSMap.containsKey(ec)) {
@@ -220,26 +229,7 @@ public class MCEDS {
                 });
             });
         });
-
-        catalyticSites.clear();
-
-        System.out.println("Total Input Domains Found: " + allDomains.size());
-        System.out.println("Total Unique Domains Found: " + uniqueDomians.size());
-        System.out.println("Total Confusion Domains Found: " + (allDomains.size() - uniqueDomians.size()));
-
-        System.out.println("!------------------------------------------------!");
-        System.out.println("\t\"EC\"" + "\t\"PDB\"" + "\t\"DOMAINS\"" + "\t\"MCEDS\"");
-        System.out.println("!------------------------------------------------!");
-
-        refinedMCEDSMap.keySet().stream().forEach((String ec) -> {
-            TreeMap<String, Set<String>> map = refinedMCEDSMap.get(ec);
-            map.keySet().stream().forEach((String pdbCode) -> {
-                Set<String> commonDOMAINSDomains = map.get(pdbCode);
-                Set<String> allDomainsForPDB = rawMap.get(ec).get(pdbCode);
-                System.out.println("\t" + ec + "\t" + pdbCode + "\t" + allDomainsForPDB + "\t" + commonDOMAINSDomains);
-            });
-        });
-
+        return uniqueDomians;
     }
 
 }
