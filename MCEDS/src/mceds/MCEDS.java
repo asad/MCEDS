@@ -82,7 +82,7 @@ public class MCEDS {
         Map<String, TreeMap<String, Set<String>>> rawMap = ecpdbDomainIntegrator.getMap();
 
         /*
-         Calculating minimum domain combinations in EC
+         Calculating minimum domain visitedCombinations in EC
          */
         final Set<String> allDomains = conservedDomains(rawMap, catalyticSites);
         final Map<String, TreeMap<String, Set<String>>> refinedMCEDSMap = new TreeMap<>();
@@ -109,31 +109,31 @@ public class MCEDS {
 
     }
 
-    private Set<String> conservedDomains(final Map<String, TreeMap<String, Set<String>>> rawMap, final Map<String, TreeMap<Integer, Set<String>>> catalyticSites) {
+    private Set<String> conservedDomains(final Map<String, TreeMap<String, Set<String>>> rawMap, final Map<String, TreeMap<Integer, Set<String>>> potentialNonRedundentDomains) {
         final Set<String> allDomains = new TreeSet<>();
 
         /*
-         Calculating minimum domain combinations in EC
+         Calculating minimum domain visitedCombinations in EC
          */
         if (DEBUG) {
             System.out.println("!------------------------------------------------!");
             System.out.println("\tIndex" + "\tEC" + "\tCombinations");
         }
         for (String ec : rawMap.keySet()) {
-            TreeMap<String, Set<String>> pdb_DOMAINS_combinations = rawMap.get(ec);
-            Map<Integer, Set<String>> combinations = new TreeMap<>();
+            TreeMap<String, Set<String>> inputDomainCombinations = rawMap.get(ec);
+            Map<Integer, Set<String>> seedDomainCombinations = new TreeMap<>();
 
             int counter = 1;
-            for (String pdb : pdb_DOMAINS_combinations.keySet()) {
+            for (String pdb : inputDomainCombinations.keySet()) {
                 Set<String> common = new TreeSet<>();
-                Set<String> domains = pdb_DOMAINS_combinations.get(pdb);
+                Set<String> domains = inputDomainCombinations.get(pdb);
                 allDomains.addAll(domains);
                 boolean flag = false;
 
                 /*
                  Select Seed Domains
                  */
-                for (Set<String> v : combinations.values()) {
+                for (Set<String> v : seedDomainCombinations.values()) {
                     Set<String> t = new TreeSet<>(v);
                     t.retainAll(domains);
                     if (!t.isEmpty() && t.size() == v.size()) {
@@ -149,7 +149,7 @@ public class MCEDS {
                     common.addAll(domains);
                     if (WITHIN_EC_CLASS) {
 
-                        pdb_DOMAINS_combinations.keySet().stream().map((pdbcommon) -> pdb_DOMAINS_combinations.get(pdbcommon)).map((domainsComb) -> new TreeSet<>(domainsComb)).map((c) -> {
+                        inputDomainCombinations.keySet().stream().map((pdbcommon) -> inputDomainCombinations.get(pdbcommon)).map((domainsComb) -> new TreeSet<>(domainsComb)).map((c) -> {
                             c.retainAll(common);
                             return c;
                         }).filter((c) -> (!c.isEmpty())).forEach((c) -> {
@@ -157,13 +157,13 @@ public class MCEDS {
                             common.addAll(c);
                         });
 
-                        combinations.put(counter, common);
+                        seedDomainCombinations.put(counter, common);
                         counter++;
 
                     } else {
-                        for (String ecAll : rawMap.keySet()) {
-                            TreeMap<String, Set<String>> pdb_DOMAINS_combinations_all = rawMap.get(ecAll);
-                            pdb_DOMAINS_combinations_all.keySet().stream().map((pdbcommon) -> pdb_DOMAINS_combinations_all.get(pdbcommon)).map((domainsComb) -> new TreeSet<>(domainsComb)).map((c) -> {
+                        for (String enzymeID : rawMap.keySet()) {
+                            TreeMap<String, Set<String>> pdbDomainsCombinationsMap = rawMap.get(enzymeID);
+                            pdbDomainsCombinationsMap.keySet().stream().map((pdbcommon) -> pdbDomainsCombinationsMap.get(pdbcommon)).map((domainsComb) -> new TreeSet<>(domainsComb)).map((c) -> {
                                 c.retainAll(common);
                                 return c;
                             }).filter((c) -> (!c.isEmpty())).forEach((c) -> {
@@ -171,26 +171,26 @@ public class MCEDS {
                                 common.addAll(c);
                             });
                         }
-                        combinations.put(counter, common);
+                        seedDomainCombinations.put(counter, common);
                         counter++;
                     }
                 }
 
             }
 
-            if (!catalyticSites.containsKey(ec)) {
-                catalyticSites.put(ec, new TreeMap<>());
+            if (!potentialNonRedundentDomains.containsKey(ec)) {
+                potentialNonRedundentDomains.put(ec, new TreeMap<>());
             }
             /*
              Print Combinations
              */
             if (DEBUG) {
                 System.out.println("!------------------------------------------------!");
-                combinations.entrySet().stream().forEach((m) -> {
+                seedDomainCombinations.entrySet().stream().forEach((m) -> {
                     System.out.println("\t" + m.getKey() + "\t" + ec + "\t" + m.getValue());
                 });
             }
-            catalyticSites.get(ec).putAll(combinations);
+            potentialNonRedundentDomains.get(ec).putAll(seedDomainCombinations);
         }
         return allDomains;
     }
@@ -208,9 +208,9 @@ public class MCEDS {
             }
             return ec;
         }).forEach((ec) -> {
-            TreeMap<String, Set<String>> pdb2DOMAINSCodes = rawMap.get(ec);
-            pdb2DOMAINSCodes.keySet().stream().forEach((pdbCode) -> {
-                Set<String> rawDomains = pdb2DOMAINSCodes.get(pdbCode);
+            TreeMap<String, Set<String>> pdb2DomiansMap = rawMap.get(ec);
+            pdb2DomiansMap.keySet().stream().forEach((pdbCode) -> {
+                Set<String> rawDomains = pdb2DomiansMap.get(pdbCode);
                 TreeMap<Integer, Set<String>> cataticDomainMaps = catalyticSites.get(ec);
                 cataticDomainMaps.values().stream().forEach((domains) -> {
                     TreeSet<String> commonDomains = new TreeSet<>(domains);
