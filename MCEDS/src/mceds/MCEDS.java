@@ -107,9 +107,9 @@ public class MCEDS {
             refinedMCEDSMap.keySet().stream().forEach((String ec) -> {
                 TreeMap<String, Set<String>> map = refinedMCEDSMap.get(ec);
                 map.keySet().stream().forEach((String pdbCode) -> {
-                    Set<String> commonDOMAINSDomains = map.get(pdbCode);
+                    Set<String> commonDomains = map.get(pdbCode);
                     Set<String> allDomainsForPDB = rawMap.get(ec).get(pdbCode);
-                    System.out.println("\t" + ec + "\t" + pdbCode + "\t" + allDomainsForPDB + "\t" + commonDOMAINSDomains);
+                    System.out.println("\t" + ec + "\t" + pdbCode + "\t" + allDomainsForPDB + "\t" + commonDomains);
                 });
             });
         }
