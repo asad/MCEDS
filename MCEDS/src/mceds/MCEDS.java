@@ -90,22 +90,29 @@ public class MCEDS {
         Set<String> uniqueDomians = refineDomains(rawMap, catalyticSites, refinedMCEDSMap);
         catalyticSites.clear();
 
-        System.out.println("Total Input Domains Found: " + allDomains.size());
-        System.out.println("Total Unique Domains Found: " + uniqueDomians.size());
-        System.out.println("Total Confusion Domains Found: " + (allDomains.size() - uniqueDomians.size()));
+        if (DEBUG) {
+            System.err.println("\t!------------------------------------------------!");
+            System.err.println("\tTotal Input Domains Found: " + allDomains.size());
+            System.err.println("\tTotal Unique Domains Found: " + uniqueDomians.size());
+            System.err.println("\tTotal Confusion Domains Found: " + (allDomains.size() - uniqueDomians.size()));
+            System.err.println("\t!------------------------------------------------!");
 
-        System.out.println("!------------------------------------------------!");
-        System.out.println("\t\"EC\"" + "\t\"PDB\"" + "\t\"DOMAINS\"" + "\t\"MCEDS\"");
-        System.out.println("!------------------------------------------------!");
+        }
 
-        refinedMCEDSMap.keySet().stream().forEach((String ec) -> {
-            TreeMap<String, Set<String>> map = refinedMCEDSMap.get(ec);
-            map.keySet().stream().forEach((String pdbCode) -> {
-                Set<String> commonDOMAINSDomains = map.get(pdbCode);
-                Set<String> allDomainsForPDB = rawMap.get(ec).get(pdbCode);
-                System.out.println("\t" + ec + "\t" + pdbCode + "\t" + allDomainsForPDB + "\t" + commonDOMAINSDomains);
+        if (!DEBUG) {
+            System.out.println("!------------------------------------------------!");
+            System.out.println("\t\"EC\"" + "\t\"PDB\"" + "\t\"DOMAINS\"" + "\t\"MCEDS\"");
+            System.out.println("!------------------------------------------------!");
+
+            refinedMCEDSMap.keySet().stream().forEach((String ec) -> {
+                TreeMap<String, Set<String>> map = refinedMCEDSMap.get(ec);
+                map.keySet().stream().forEach((String pdbCode) -> {
+                    Set<String> commonDOMAINSDomains = map.get(pdbCode);
+                    Set<String> allDomainsForPDB = rawMap.get(ec).get(pdbCode);
+                    System.out.println("\t" + ec + "\t" + pdbCode + "\t" + allDomainsForPDB + "\t" + commonDOMAINSDomains);
+                });
             });
-        });
+        }
 
     }
 
@@ -116,8 +123,7 @@ public class MCEDS {
          Calculating minimum domain visitedCombinations in EC
          */
         if (DEBUG) {
-            System.out.println("!------------------------------------------------!");
-            System.out.println("\tIndex" + "\tEC" + "\tCombinations");
+            System.out.println("\t\"Combinations\"" + "\t\"EC\"" + "\t\"Combinations\"");
         }
         for (String ec : rawMap.keySet()) {
             TreeMap<String, Set<String>> inputDomainCombinations = rawMap.get(ec);
@@ -185,7 +191,6 @@ public class MCEDS {
              Print Combinations
              */
             if (DEBUG) {
-                System.out.println("!------------------------------------------------!");
                 seedDomainCombinations.entrySet().stream().forEach((m) -> {
                     System.out.println("\t" + m.getKey() + "\t" + ec + "\t" + m.getValue());
                 });
